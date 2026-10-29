@@ -38,13 +38,50 @@ curl -s localhost:8000/projects -H 'content-type: application/json' -d '{
 可选 PostgreSQL 检查点：
 
 ```bash
-docker compose up -d
+docker compose up -d redis postgres
 export DATABASE_URL=postgresql://graphmovie:graphmovie@localhost:5432/graphmovie
-uv sync --extra postgres
+uv sync --extra postgres --extra worker
 ```
 
 `uv sync` 会默认带上开发依赖（pytest）。只要运行时依赖可用 `uv sync --no-dev`。
-Postgres / LLM 仍是可选 extra：`uv sync --extra postgres`、`uv sync --extra llm`。
+可选 extra：`postgres`、`llm`、`worker`（Celery + Redis）。
+
+## Celery 异步任务
+
+同步 API（`/projects`）适合本地调试。生产流量用 Jobs API，把 LangGraph 跑在 worker 里：
+
+```bash
+# terminal 1: broker
+docker compose up -d redis postgres
+
+# terminal 2: API
+export CELERY_BROKER_URL=redis://localhost:6379/0
+export CELERY_RESULT_BACKEND=redis://localhost:6379/1
+export DATABASE_URL=postgresql://graphmovie:graphmovie@localhost:5432/graphmovie
+uv sync --extra worker --extra postgres
+uvicorn graphmovie.api:app --reload
+
+# terminal 3: worker
+celery -A graphmovie.celery_app.celery_app worker -Q graphmovie -l info
+```
+
+```bash
+# 入队规划
+curl -s localhost:8000/jobs/plan -H 'content-type: application/json' -d '{
+  "title":"雨夜霓虹","genre":"科幻","style":"cinematic",
+  "duration_sec":60,"budget_cny":8000,"footage_source":"generated"
+}'
+# => {"task_id":"...","project_id":"...","status":"queued"}
+
+# 查询任务
+curl -s localhost:8000/jobs/<task_id>
+
+# 入队人审续跑
+curl -s localhost:8000/jobs/<project_id>/resume -H 'content-type: application/json' \
+  -d '{"decision":"approve"}'
+```
+
+跨进程 `resume` 必须配置 `DATABASE_URL`（PostgresSaver）。API 与 worker 不能各自用内存检查点。本地测试可用 `CELERY_TASK_ALWAYS_EAGER=1` 同进程执行。
 
 ## What LangGraph is doing here
 

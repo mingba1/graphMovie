@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:16
     environment:
@@ -14,6 +24,46 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      bash -lc "pip install -e '.[worker,postgres]' &&
+      uvicorn graphmovie.api:app --host 0.0.0.0 --port 8000"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATABASE_URL: postgresql://graphmovie:graphmovie@postgres:5432/graphmovie
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    profiles: ["stack"]
+
+  worker:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      bash -lc "pip install -e '.[worker,postgres]' &&
+      celery -A graphmovie.celery_app.celery_app worker -Q graphmovie -l info"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATABASE_URL: postgresql://graphmovie:graphmovie@postgres:5432/graphmovie
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    profiles: ["stack"]
 
 volumes:
   graphmovie_pg:

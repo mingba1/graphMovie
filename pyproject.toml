@@ -27,6 +27,10 @@ llm = [
   "langchain-openai>=0.2",
   "langsmith>=0.1",
 ]
+worker = [
+  "celery[redis]>=5.4",
+  "redis>=5.0",
+]
 
 [dependency-groups]
 dev = [

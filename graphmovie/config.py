@@ -61,6 +61,9 @@ class Settings:
     max_revision_round: int = 3
     max_route_retries: int = 2
     use_llm: bool = False
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/1"
+    celery_task_always_eager: bool = False
 
     @classmethod
     def load(cls) -> Settings:
@@ -74,12 +77,22 @@ class Settings:
             or os.getenv("GOMOVIE_USE_LLM")
             or "0"
         ) == "1"
+        eager = (
+            os.getenv("CELERY_TASK_ALWAYS_EAGER")
+            or os.getenv("GRAPHMOVIE_CELERY_EAGER")
+            or "0"
+        ).lower() in {"1", "true", "yes"}
+        broker = os.getenv("CELERY_BROKER_URL") or "redis://localhost:6379/0"
+        backend = os.getenv("CELERY_RESULT_BACKEND") or "redis://localhost:6379/1"
         return cls(
             database_url=os.getenv("DATABASE_URL") or None,
             tool_backend=os.getenv("TOOL_BACKEND", "local"),
             data_dir=data_dir,
             runtime_dir=data_dir / "runtime",
             use_llm=use_llm,
+            celery_broker_url=broker,
+            celery_result_backend=backend,
+            celery_task_always_eager=eager,
         )
 
 

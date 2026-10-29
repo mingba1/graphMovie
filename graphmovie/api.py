@@ -6,6 +6,12 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from graphmovie.jobs import (
+    WorkerUnavailableError,
+    enqueue_plan,
+    enqueue_resume,
+    get_job,
+)
 from graphmovie.service import MovieService, build_service
 from graphmovie.state import MovieRequest
 
@@ -45,6 +51,7 @@ def health() -> dict[str, str]:
 
 @app.post("/projects")
 def create_project(body: CreateBody) -> dict[str, Any]:
+    """Synchronous planning. Prefer /jobs/plan for production API traffic."""
     payload = body.model_dump(exclude_none=True)
     request = MovieRequest.model_validate(payload)
     return get_service().create(request)
@@ -78,3 +85,39 @@ def export_project(
         raise HTTPException(status_code=404, detail="project not found") from exc
     media = "application/json" if fmt == "json" else "text/markdown; charset=utf-8"
     return PlainTextResponse(content, media_type=media)
+
+
+@app.post("/jobs/plan", status_code=202)
+def enqueue_plan_job(body: CreateBody) -> dict[str, Any]:
+    """Enqueue LangGraph planning on Celery."""
+    payload = body.model_dump(exclude_none=True)
+    # Ensure project_id exists before queueing so clients can correlate.
+    request = MovieRequest.model_validate(payload)
+    try:
+        job = enqueue_plan(request.model_dump())
+    except WorkerUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    job["project_id"] = request.project_id
+    return job
+
+
+@app.post("/jobs/{project_id}/resume", status_code=202)
+def enqueue_resume_job(project_id: str, body: ResumeBody) -> dict[str, Any]:
+    if not get_service().get(project_id):
+        raise HTTPException(status_code=404, detail="project not found")
+    try:
+        return enqueue_resume(
+            project_id,
+            decision=body.decision,
+            notes=body.notes,
+        )
+    except WorkerUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.get("/jobs/{task_id}")
+def job_status(task_id: str) -> dict[str, Any]:
+    try:
+        return get_job(task_id)
+    except WorkerUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
