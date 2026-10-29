@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field
+
+from graphmovie.service import MovieService, build_service
+from graphmovie.state import MovieRequest
+
+app = FastAPI(title="graphmovie", version="0.1.0")
+_service: MovieService | None = None
+
+
+def get_service() -> MovieService:
+    global _service
+    if _service is None:
+        _service = build_service()
+    return _service
+
+
+class ResumeBody(BaseModel):
+    decision: Literal["approve", "revise"] = "approve"
+    notes: str | None = None
+
+
+class CreateBody(BaseModel):
+    title: str
+    genre: str
+    style: Literal["cinematic", "anime", "documentary"] = "cinematic"
+    duration_sec: int = Field(default=60, ge=15, le=600)
+    budget_cny: int = Field(default=8000, ge=500)
+    pace: Literal["relaxed", "balanced", "packed"] = "balanced"
+    footage_source: Literal["generated", "stock"] = "generated"
+    delivery_date: str | None = None
+    interests: list[str] = Field(default_factory=list)
+    project_id: str | None = None
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.post("/projects")
+def create_project(body: CreateBody) -> dict[str, Any]:
+    payload = body.model_dump(exclude_none=True)
+    request = MovieRequest.model_validate(payload)
+    return get_service().create(request)
+
+
+@app.get("/projects/{project_id}")
+def get_project(project_id: str) -> dict[str, Any]:
+    project = get_service().get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="project not found")
+    return project
+
+
+@app.post("/projects/{project_id}/resume")
+def resume_project(project_id: str, body: ResumeBody) -> dict[str, Any]:
+    service = get_service()
+    if not service.get(project_id):
+        raise HTTPException(status_code=404, detail="project not found")
+    return service.resume(project_id, decision=body.decision, notes=body.notes)
+
+
+@app.get("/projects/{project_id}/export")
+def export_project(
+    project_id: str,
+    fmt: Literal["markdown", "json"] = Query(default="markdown", alias="format"),
+):
+    service = get_service()
+    try:
+        content = service.export(project_id, fmt=fmt)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="project not found") from exc
+    media = "application/json" if fmt == "json" else "text/markdown; charset=utf-8"
+    return PlainTextResponse(content, media_type=media)

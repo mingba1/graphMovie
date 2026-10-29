@@ -1,0 +1,34 @@
+[
+  {
+    "id": "cast_nova",
+    "name": "诺娃",
+    "role": "女主探案",
+    "voice": "冷静女声",
+    "cost_cny": 600,
+    "tags": ["科幻", "lead"]
+  },
+  {
+    "id": "cast_kai",
+    "name": "凯",
+    "role": "黑客搭档",
+    "voice": "低沉男声",
+    "cost_cny": 480,
+    "tags": ["科幻", "support"]
+  },
+  {
+    "id": "cast_host",
+    "name": "旁白主持",
+    "role": "旁白",
+    "voice": "纪录片旁白",
+    "cost_cny": 250,
+    "tags": ["documentary", "narration"]
+  },
+  {
+    "id": "cast_heroine_anime",
+    "name": "星野",
+    "role": "动漫女主",
+    "voice": "明亮少女声",
+    "cost_cny": 520,
+    "tags": ["anime", "lead"]
+  }
+]

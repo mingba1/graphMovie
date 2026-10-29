@@ -1,0 +1,32 @@
+[
+  {
+    "id": "loc_neon_district",
+    "name": "霓虹街区",
+    "cost_cny": 500,
+    "tags": ["urban", "night", "科幻"]
+  },
+  {
+    "id": "loc_rain_rooftop",
+    "name": "雨夜天台",
+    "cost_cny": 360,
+    "tags": ["rooftop", "rain", "cinematic"]
+  },
+  {
+    "id": "loc_lab",
+    "name": "地下实验室",
+    "cost_cny": 620,
+    "tags": ["interior", "科幻"]
+  },
+  {
+    "id": "loc_market",
+    "name": "夜市巷弄",
+    "cost_cny": 280,
+    "tags": ["market", "handheld"]
+  },
+  {
+    "id": "loc_studio_white",
+    "name": "白棚摄影棚",
+    "cost_cny": 200,
+    "tags": ["studio", "documentary", "interview"]
+  }
+]

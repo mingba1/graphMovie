@@ -1,0 +1,30 @@
+[
+  {
+    "id": "stock_drone_city",
+    "name": "库存城市航拍",
+    "duration_sec": 8,
+    "cost_cny": 150,
+    "tags": ["drone", "city", "wide"]
+  },
+  {
+    "id": "stock_rain_plate",
+    "name": "库存雨景空镜",
+    "duration_sec": 5,
+    "cost_cny": 90,
+    "tags": ["rain", "broll"]
+  },
+  {
+    "id": "stock_crowd",
+    "name": "库存人群穿行",
+    "duration_sec": 4,
+    "cost_cny": 110,
+    "tags": ["crowd", "urban"]
+  },
+  {
+    "id": "stock_lab_broll",
+    "name": "库存实验室空镜",
+    "duration_sec": 6,
+    "cost_cny": 130,
+    "tags": ["lab", "科幻"]
+  }
+]

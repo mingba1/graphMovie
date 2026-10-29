@@ -1,0 +1,98 @@
+[
+  {
+    "id": "shot_neon_alley",
+    "name": "霓虹窄巷跟拍",
+    "base_duration_sec": 4,
+    "base_cost_cny": 420,
+    "tags": ["cinematic", "night", "urban", "科幻"],
+    "styles": ["cinematic", "anime"]
+  },
+  {
+    "id": "shot_rain_closeup",
+    "name": "雨滴特写",
+    "base_duration_sec": 3,
+    "base_cost_cny": 180,
+    "tags": ["cinematic", "detail", "rain"],
+    "styles": ["cinematic", "documentary"]
+  },
+  {
+    "id": "shot_skyline_drone",
+    "name": "城市天际线航拍",
+    "base_duration_sec": 6,
+    "base_cost_cny": 680,
+    "tags": ["cinematic", "wide", "city"],
+    "styles": ["cinematic", "documentary"]
+  },
+  {
+    "id": "shot_lab_reveal",
+    "name": "实验室开门揭示",
+    "base_duration_sec": 5,
+    "base_cost_cny": 520,
+    "tags": ["科幻", "interior", "drama"],
+    "styles": ["cinematic", "anime"]
+  },
+  {
+    "id": "shot_chase_cut",
+    "name": "追逐快切",
+    "base_duration_sec": 2,
+    "base_cost_cny": 260,
+    "tags": ["action", "fast", "packed"],
+    "styles": ["cinematic", "anime"]
+  },
+  {
+    "id": "shot_dialogue_two",
+    "name": "双人对话正反打",
+    "base_duration_sec": 8,
+    "base_cost_cny": 340,
+    "tags": ["dialogue", "balanced", "character"],
+    "styles": ["cinematic", "documentary", "anime"]
+  },
+  {
+    "id": "shot_anime_speedline",
+    "name": "动漫速度线转场",
+    "base_duration_sec": 2,
+    "base_cost_cny": 150,
+    "tags": ["anime", "transition", "fast"],
+    "styles": ["anime"]
+  },
+  {
+    "id": "shot_doc_interview",
+    "name": "纪实访谈机位",
+    "base_duration_sec": 10,
+    "base_cost_cny": 220,
+    "tags": ["documentary", "talking-head", "relaxed"],
+    "styles": ["documentary"]
+  },
+  {
+    "id": "shot_market_walk",
+    "name": "夜市手持穿行",
+    "base_duration_sec": 5,
+    "base_cost_cny": 300,
+    "tags": ["urban", "handheld", "food"],
+    "styles": ["cinematic", "documentary"]
+  },
+  {
+    "id": "shot_title_card",
+    "name": "片名字幕卡",
+    "base_duration_sec": 3,
+    "base_cost_cny": 90,
+    "tags": ["title", "graphic"],
+    "styles": ["cinematic", "anime", "documentary"]
+  },
+  {
+    "id": "shot_ending_hold",
+    "name": "落幅长持",
+    "base_duration_sec": 7,
+    "base_cost_cny": 210,
+    "tags": ["ending", "relaxed", "cinematic"],
+    "styles": ["cinematic", "documentary"]
+  },
+  {
+    "id": "shot_montage_grid",
+    "name": "多画面蒙太奇",
+    "base_duration_sec": 4,
+    "base_cost_cny": 390,
+    "tags": ["montage", "fast_social", "packed"],
+    "styles": ["cinematic", "anime"]
+  }
+]

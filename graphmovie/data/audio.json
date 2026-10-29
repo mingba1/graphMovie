@@ -1,0 +1,44 @@
+[
+  {
+    "id": "audio_synthwave",
+    "name": "合成波夜行",
+    "kind": "score",
+    "cost_cny": 320,
+    "tags": ["cinematic", "night", "科幻"]
+  },
+  {
+    "id": "audio_rain_loop",
+    "name": "雨声循环",
+    "kind": "sfx",
+    "cost_cny": 60,
+    "tags": ["rain", "ambient"]
+  },
+  {
+    "id": "audio_pulse",
+    "name": "脉冲低音",
+    "kind": "score",
+    "cost_cny": 280,
+    "tags": ["action", "fast_social"]
+  },
+  {
+    "id": "audio_strings",
+    "name": "悬疑弦乐",
+    "kind": "score",
+    "cost_cny": 410,
+    "tags": ["cinematic", "drama"]
+  },
+  {
+    "id": "audio_anime_stinger",
+    "name": "动漫转场音效",
+    "kind": "sfx",
+    "cost_cny": 80,
+    "tags": ["anime", "transition"]
+  },
+  {
+    "id": "audio_doc_bed",
+    "name": "纪实铺底",
+    "kind": "score",
+    "cost_cny": 180,
+    "tags": ["documentary", "soft"]
+  }
+]
