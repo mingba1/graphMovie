@@ -64,6 +64,11 @@ class Settings:
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/1"
     celery_task_always_eager: bool = False
+    celery_soft_time_limit_sec: int = 120
+    celery_time_limit_sec: int = 180
+    api_keys: frozenset[str] = field(default_factory=frozenset)
+    rate_limit_per_minute: int = 60
+    request_timeout_sec: float = 120.0
 
     @classmethod
     def load(cls) -> Settings:
@@ -84,6 +89,8 @@ class Settings:
         ).lower() in {"1", "true", "yes"}
         broker = os.getenv("CELERY_BROKER_URL") or "redis://localhost:6379/0"
         backend = os.getenv("CELERY_RESULT_BACKEND") or "redis://localhost:6379/1"
+        raw_keys = os.getenv("GRAPHMOVIE_API_KEYS") or ""
+        api_keys = frozenset(k.strip() for k in raw_keys.split(",") if k.strip())
         return cls(
             database_url=os.getenv("DATABASE_URL") or None,
             tool_backend=os.getenv("TOOL_BACKEND", "local"),
@@ -93,6 +100,17 @@ class Settings:
             celery_broker_url=broker,
             celery_result_backend=backend,
             celery_task_always_eager=eager,
+            celery_soft_time_limit_sec=int(
+                os.getenv("CELERY_SOFT_TIME_LIMIT", "120")
+            ),
+            celery_time_limit_sec=int(os.getenv("CELERY_TIME_LIMIT", "180")),
+            api_keys=api_keys,
+            rate_limit_per_minute=int(
+                os.getenv("GRAPHMOVIE_RATE_LIMIT_PER_MINUTE", "60")
+            ),
+            request_timeout_sec=float(
+                os.getenv("GRAPHMOVIE_REQUEST_TIMEOUT_SEC", "120")
+            ),
         )
 
 

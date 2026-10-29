@@ -1,6 +1,8 @@
 # graphMovie
 
-LangGraph 制作规划服务：输入题材、时长、预算和风格，并行准备素材证据，再并行产出 `fast_social` / `balanced` / `cinematic` 三套分镜，按可解释分数择优，并在人工确认处暂停续跑。
+LangGraph **制片规划**服务：输入题材、时长、预算和风格，并行准备素材证据，再并行产出 `fast_social` / `balanced` / `cinematic` 三套分镜，按可解释分数择优，并在人工确认处暂停续跑。
+
+输出是分镜方案、预算与评审结果（Markdown/JSON），**不是渲染成片**。成片生成属于后续产品能力，不在本仓库范围。
 
 设计说明见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
@@ -8,13 +10,12 @@ LangGraph 制作规划服务：输入题材、时长、预算和风格，并行�
 
 ```bash
 cd /Users/mingba/Documents/trunk/github/graphMovie
-# 若 shell 里还残留旧路径，先退出旧虚拟环境
 deactivate 2>/dev/null || true
 unset VIRTUAL_ENV
 
 uv venv .venv
 source .venv/bin/activate
-uv sync
+uv sync --extra worker
 
 python -m graphmovie plan \
   --title 雨夜霓虹 --genre 科幻 --style cinematic \
@@ -35,6 +36,14 @@ curl -s localhost:8000/projects -H 'content-type: application/json' -d '{
 }'
 ```
 
+生产建议打开鉴权：
+
+```bash
+export GRAPHMOVIE_API_KEYS=dev-secret
+curl -s localhost:8000/projects -H 'content-type: application/json' \
+  -H 'X-API-Key: dev-secret' -d '{...}'
+```
+
 可选 PostgreSQL 检查点：
 
 ```bash
@@ -43,45 +52,42 @@ export DATABASE_URL=postgresql://graphmovie:graphmovie@localhost:5432/graphmovie
 uv sync --extra postgres --extra worker
 ```
 
-`uv sync` 会默认带上开发依赖（pytest）。只要运行时依赖可用 `uv sync --no-dev`。
-可选 extra：`postgres`、`llm`、`worker`（Celery + Redis）。
+`uv sync` 默认带开发依赖（pytest）。可选 extra：`postgres`、`llm`、`worker`。
+
+## 工程化
+
+| 能力 | 做法 |
+|---|---|
+| 鉴权 | `GRAPHMOVIE_API_KEYS`，请求头 `X-API-Key`；未配置则本地关闭鉴权 |
+| 限流 | `GRAPHMOVIE_RATE_LIMIT_PER_MINUTE`（默认 60） |
+| 超时 | API `GRAPHMOVIE_REQUEST_TIMEOUT_SEC`；Celery `CELERY_SOFT_TIME_LIMIT` / `CELERY_TIME_LIMIT` |
+| 共享检查点 | 非 eager 的 `resume` 未配置 `DATABASE_URL` 时直接拒绝入队 |
+| CI | `.github/workflows/ci.yml`，push/PR 自动 `pytest` |
 
 ## Celery 异步任务
 
-同步 API（`/projects`）适合本地调试。生产流量用 Jobs API，把 LangGraph 跑在 worker 里：
+同步 API（`/projects`）适合本地调试。生产流量用 Jobs API：
 
 ```bash
-# terminal 1: broker
 docker compose up -d redis postgres
-
-# terminal 2: API
 export CELERY_BROKER_URL=redis://localhost:6379/0
 export CELERY_RESULT_BACKEND=redis://localhost:6379/1
 export DATABASE_URL=postgresql://graphmovie:graphmovie@localhost:5432/graphmovie
-uv sync --extra worker --extra postgres
 uvicorn graphmovie.api:app --reload
-
-# terminal 3: worker
 celery -A graphmovie.celery_app.celery_app worker -Q graphmovie -l info
 ```
 
 ```bash
-# 入队规划
-curl -s localhost:8000/jobs/plan -H 'content-type: application/json' -d '{
+curl -s localhost:8000/jobs/plan -H 'content-type: application/json' -H 'X-API-Key: dev-secret' -d '{
   "title":"雨夜霓虹","genre":"科幻","style":"cinematic",
   "duration_sec":60,"budget_cny":8000,"footage_source":"generated"
 }'
-# => {"task_id":"...","project_id":"...","status":"queued"}
-
-# 查询任务
-curl -s localhost:8000/jobs/<task_id>
-
-# 入队人审续跑
+curl -s localhost:8000/jobs/<task_id> -H 'X-API-Key: dev-secret'
 curl -s localhost:8000/jobs/<project_id>/resume -H 'content-type: application/json' \
-  -d '{"decision":"approve"}'
+  -H 'X-API-Key: dev-secret' -d '{"decision":"approve"}'
 ```
 
-跨进程 `resume` 必须配置 `DATABASE_URL`（PostgresSaver）。API 与 worker 不能各自用内存检查点。本地测试可用 `CELERY_TASK_ALWAYS_EAGER=1` 同进程执行。
+跨进程 `resume` 必须配置 `DATABASE_URL`。本地可用 `CELERY_TASK_ALWAYS_EAGER=1`。
 
 ## What LangGraph is doing here
 
@@ -93,5 +99,5 @@ curl -s localhost:8000/jobs/<project_id>/resume -H 'content-type: application/js
 ## Tests
 
 ```bash
-pytest
+CELERY_TASK_ALWAYS_EAGER=1 pytest
 ```

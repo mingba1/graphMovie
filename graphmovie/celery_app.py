@@ -32,6 +32,8 @@ celery_app.conf.update(
     task_always_eager=_eager,
     task_eager_propagates=True,
     task_store_eager_result=True,
+    task_soft_time_limit=settings.celery_soft_time_limit_sec,
+    task_time_limit=settings.celery_time_limit_sec,
     result_expires=86400,
     cache_backend="memory",
     task_routes={

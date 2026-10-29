@@ -6,16 +6,34 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from graphmovie.config import settings
 from graphmovie.jobs import (
     WorkerUnavailableError,
     enqueue_plan,
     enqueue_resume,
     get_job,
 )
+from graphmovie.runtime_guards import SharedCheckpointerRequired
+from graphmovie.security import (
+    ApiKeyMiddleware,
+    RateLimitMiddleware,
+    RequestTimeoutMiddleware,
+)
 from graphmovie.service import MovieService, build_service
 from graphmovie.state import MovieRequest
 
-app = FastAPI(title="graphmovie", version="0.1.0")
+app = FastAPI(
+    title="graphmovie",
+    version="0.1.0",
+    description=(
+        "AI movie production planning API. Returns storyboards, budgets, and "
+        "review decisions — not rendered video files."
+    ),
+)
+app.add_middleware(RequestTimeoutMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(ApiKeyMiddleware)
+
 _service: MovieService | None = None
 
 
@@ -45,8 +63,14 @@ class CreateBody(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "auth_enabled": bool(settings.api_keys),
+        "rate_limit_per_minute": settings.rate_limit_per_minute,
+        "request_timeout_sec": settings.request_timeout_sec,
+        "product": "storyboard_planning",
+    }
 
 
 @app.post("/projects")
@@ -91,11 +115,12 @@ def export_project(
 def enqueue_plan_job(body: CreateBody) -> dict[str, Any]:
     """Enqueue LangGraph planning on Celery."""
     payload = body.model_dump(exclude_none=True)
-    # Ensure project_id exists before queueing so clients can correlate.
     request = MovieRequest.model_validate(payload)
     try:
         job = enqueue_plan(request.model_dump())
     except WorkerUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SharedCheckpointerRequired as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     job["project_id"] = request.project_id
     return job
@@ -112,6 +137,8 @@ def enqueue_resume_job(project_id: str, body: ResumeBody) -> dict[str, Any]:
             notes=body.notes,
         )
     except WorkerUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SharedCheckpointerRequired as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 

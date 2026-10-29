@@ -28,6 +28,10 @@ def enqueue_resume(
     decision: str = "approve",
     notes: str | None = None,
 ) -> dict[str, str]:
+    from graphmovie.runtime_guards import require_shared_checkpointer
+
+    # Fail before queueing so clients get a clear 503 instead of a poison task.
+    require_shared_checkpointer(operation="resume_project")
     try:
         from graphmovie.tasks import resume_project
     except ImportError as exc:  # pragma: no cover

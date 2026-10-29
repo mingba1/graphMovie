@@ -252,13 +252,25 @@ graphMovie/
 5. 离线分镜规划器、可选模型适配和 LangSmith metadata。
 6. README 与测试。
 
-## Celery 工程化
+## Celery 与工程化
 
 - `POST /jobs/plan`、`POST /jobs/{id}/resume`、`GET /jobs/{task_id}` 把图执行放到 Celery worker
 - Broker / result 使用 Redis；`docker compose up -d redis postgres` 后可本地起 worker
 - 同步 `/projects*` 保留给 CLI 与本地调试
-- 多进程续跑依赖共享 `PostgresSaver`（`DATABASE_URL`）；单测用 `CELERY_TASK_ALWAYS_EAGER=1`
+- 非 eager 的 `resume` 未配置 `DATABASE_URL` 时，入队前抛出 `SharedCheckpointerRequired`
+- API：`GRAPHMOVIE_API_KEYS` 鉴权、`GRAPHMOVIE_RATE_LIMIT_PER_MINUTE` 限流、`GRAPHMOVIE_REQUEST_TIMEOUT_SEC` 超时
+- Celery 任务软/硬超时：`CELERY_SOFT_TIME_LIMIT` / `CELERY_TIME_LIMIT`
+- CI：`.github/workflows/ci.yml` 在 push/PR 上跑 `pytest`
 
 ## 范围边界
 
-本地适配器是 Tool 的正式默认实现，接口按以后替换真实素材供应商、配音和生成视频服务来设计。本案例不包含前端页面、向量库、真实模型视频账号，也不直接渲染成片文件。它落地的是制作方案的编排、择优、人工确认、续跑，以及可选的 Celery 异步执行。
+本地适配器是 Tool 的正式默认实现，接口按以后替换真实素材供应商、配音和生成视频服务来设计。
+
+本仓库交付物是**制片规划**（分镜、预算、评审、导出），不是视频 SaaS 成品。不包含：
+
+- 前端页面
+- 向量库
+- 真实模型视频账号 / 成片渲染流水线
+- 账号体系、支付、CDN 分发
+
+这些属于产品下一阶段，不应混进当前 LangGraph 编排内核。

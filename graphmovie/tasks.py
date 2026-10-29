@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from graphmovie.celery_app import celery_app
+from graphmovie.config import settings
+from graphmovie.runtime_guards import require_shared_checkpointer
 from graphmovie.service import build_service
 from graphmovie.state import MovieRequest
 
@@ -12,7 +14,12 @@ def _service():
     return build_service()
 
 
-@celery_app.task(name="graphmovie.tasks.plan_project", bind=True)
+@celery_app.task(
+    name="graphmovie.tasks.plan_project",
+    bind=True,
+    soft_time_limit=settings.celery_soft_time_limit_sec,
+    time_limit=settings.celery_time_limit_sec,
+)
 def plan_project(self, request_payload: dict[str, Any]) -> dict[str, Any]:
     """Run LangGraph planning in a worker process."""
     self.update_state(
@@ -29,7 +36,12 @@ def plan_project(self, request_payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-@celery_app.task(name="graphmovie.tasks.resume_project", bind=True)
+@celery_app.task(
+    name="graphmovie.tasks.resume_project",
+    bind=True,
+    soft_time_limit=settings.celery_soft_time_limit_sec,
+    time_limit=settings.celery_time_limit_sec,
+)
 def resume_project(
     self,
     project_id: str,
@@ -41,6 +53,7 @@ def resume_project(
     Requires a shared checkpointer (DATABASE_URL / PostgresSaver) when the
     API process and worker are separate. Eager mode shares one process memory.
     """
+    require_shared_checkpointer(operation="resume_project")
     self.update_state(
         state="STARTED",
         meta={"stage": "resuming", "project_id": project_id, "decision": decision},
